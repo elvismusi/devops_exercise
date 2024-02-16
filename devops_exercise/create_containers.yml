@@ -1,0 +1,45 @@
+---
+- name: Create Docker Container
+  hosts: aws_ec2
+  become: true
+  gather_facts: no
+
+  tasks:
+    - name: Creating Redis Container
+      community.docker.docker_container:
+        name: redis-container
+        image: redis
+        exposed_ports:
+          - 6379
+          
+    - name: Deploy Backed Container
+      community.docker.docker_container:
+        name: back-container
+        image: anandaraaj/back
+        links:
+          - "redis-container:redis-container"
+        ports:
+          - "4000:4000"
+        env:
+          REDIS_SERVER: "redis-container:6379"
+
+    - name: Get IP of Docker Container
+      community.docker.docker_container_info:
+        name: back-container
+      register: result
+
+    - debug:
+        var: result['container']['NetworkSettings']['IPAddress']
+
+    - name: Deploy Front Container
+      community.docker.docker_container:
+        name: front-container
+        image: anandaraaj/front
+        links:
+          - "back-container:back-container"
+        ports:
+          - "80:3000"
+        env:
+          BACKEND_API_URL: "http://{{ result['container']['NetworkSettings']['IPAddress'] }}:4000"
+          CLIENT_API_URL: "http://{{ aws_public_ip }}:4000"
+

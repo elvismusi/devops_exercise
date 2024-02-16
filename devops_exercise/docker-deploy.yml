@@ -1,0 +1,45 @@
+---
+- name: Clone Git repo, Build Docker image, and Push to Docker Hub
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    git_repo_url: "https://github.com/elvismusi/devops-exercise.git"
+    docker_image_name: "front"
+    docker_hub_username: "Your Docker Hub Username"
+    docker_hub_password: "Your Docker HUB Password"
+    back_image_name: "elvismusi/back"
+    front_image_name: "elvismusi/front"
+    tag: "latest"
+
+  tasks:
+    - name: Log in to Docker Hub
+      docker_login:
+         username: "{{elvismusi }}"
+         password: "{{Agreysive300$ }}"
+
+
+    - name: Clone Git repo
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: /root/devops
+
+
+    - name: Build front image and push it to a private repo
+      community.docker.docker_image:
+        build:
+          path: /root/devops/front
+        name: "{{ front_image_name }}"
+        tag: "{{ tag }}"
+        push: true
+        source: build
+
+
+    - name: Build back image and push it to a private repo
+      community.docker.docker_image:
+        build:
+          path: /root/devops/back
+        name: "{{ back_image_name }}"
+        tag: "{{ tag }}"
+        push: true
+        source: build
